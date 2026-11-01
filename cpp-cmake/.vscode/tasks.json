@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label":"CMake: Configure Debug","type":"shell","command":"cmake --preset debug","problemMatcher":[]},
+    {"label":"CMake: Build Debug","type":"shell","command":"cmake --build --preset debug","dependsOn":"CMake: Configure Debug","group":{"kind":"build","isDefault":true},"problemMatcher":"$gcc"},
+    {"label":"CMake: Build Release","type":"shell","command":"cmake --preset release && cmake --build --preset release","problemMatcher":"$gcc"},
+    {"label":"CMake: Build Profile","type":"shell","command":"cmake --preset profile && cmake --build --preset profile","problemMatcher":"$gcc"},
+    {"label":"CMake: Build ASan","type":"shell","command":"cmake --preset asan && cmake --build --preset asan","problemMatcher":"$gcc"},
+    {"label":"CMake: Test","type":"shell","command":"ctest --test-dir build/debug --output-on-failure","dependsOn":"CMake: Build Debug","problemMatcher":[]},
+
+    {"label":"Profile: perf stat CPU/cache","type":"shell","command":"perf stat -e cycles,instructions,cache-references,cache-misses,branches,branch-misses -- ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+    {"label":"Profile: perf record","type":"shell","command":"mkdir -p ${workspaceFolder}/build/profiling && perf record -g --call-graph dwarf -o ${workspaceFolder}/build/profiling/perf.data -- ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+    {"label":"Profile: perf report","type":"shell","command":"perf report -i ${workspaceFolder}/build/profiling/perf.data","dependsOn":"Profile: perf record","problemMatcher":[]},
+    {"label":"Profile: Hotspot","type":"shell","command":"hotspot ${workspaceFolder}/build/profiling/perf.data","dependsOn":"Profile: perf record","problemMatcher":[]},
+
+    {"label":"Valgrind: Memcheck","type":"shell","command":"valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ${workspaceFolder}/build/debug/@PROJECT_NAME@","dependsOn":"CMake: Build Debug","problemMatcher":[]},
+    {"label":"Valgrind: Callgrind","type":"shell","command":"mkdir -p ${workspaceFolder}/build/profiling && valgrind --tool=callgrind --callgrind-out-file=${workspaceFolder}/build/profiling/callgrind.out ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+    {"label":"Valgrind: KCachegrind","type":"shell","command":"kcachegrind ${workspaceFolder}/build/profiling/callgrind.out","dependsOn":"Valgrind: Callgrind","problemMatcher":[]},
+    {"label":"Valgrind: Cachegrind","type":"shell","command":"mkdir -p ${workspaceFolder}/build/profiling && valgrind --tool=cachegrind --cachegrind-out-file=${workspaceFolder}/build/profiling/cachegrind.out ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+    {"label":"Valgrind: Cachegrind annotate","type":"shell","command":"cg_annotate ${workspaceFolder}/build/profiling/cachegrind.out","dependsOn":"Valgrind: Cachegrind","problemMatcher":[]},
+
+    {"label":"Heaptrack: Record","type":"shell","command":"mkdir -p ${workspaceFolder}/build/profiling && heaptrack -o ${workspaceFolder}/build/profiling/heaptrack ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+    {"label":"Heaptrack: GUI","type":"shell","command":"heaptrack_gui $(ls -t ${workspaceFolder}/build/profiling/heaptrack*.gz | head -n 1)","dependsOn":"Heaptrack: Record","problemMatcher":[]},
+
+    {"label":"Trace: strace summary","type":"shell","command":"strace -c ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+    {"label":"Trace: strace full","type":"shell","command":"mkdir -p ${workspaceFolder}/build/profiling && strace -f -tt -T -o ${workspaceFolder}/build/profiling/strace.log ${workspaceFolder}/build/profile/@PROJECT_NAME@","dependsOn":"CMake: Build Profile","problemMatcher":[]},
+
+    {"label":"GDB: Run","type":"shell","command":"gdb --args ${workspaceFolder}/build/debug/@PROJECT_NAME@","dependsOn":"CMake: Build Debug","problemMatcher":[]},
+    {"label":"GDB: Backtrace core","type":"shell","command":"gdb ${workspaceFolder}/build/debug/@PROJECT_NAME@ ${input:coreFile} -ex 'thread apply all bt full'","problemMatcher":[]}
+  ],
+  "inputs": [
+    {"id":"coreFile","type":"promptString","description":"Path to core dump"}
+  ]
+}

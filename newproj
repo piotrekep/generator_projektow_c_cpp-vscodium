@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+usage(){ echo "Usage: newproj <c|cpp> <project-name> [destination-parent] [--criterion]"; }
+[[ $# -lt 2 || $# -gt 4 ]] && { usage; exit 1; }
+lang="$1"; name="$2"; shift 2
+parent="$PWD"; criterion=0; parent_set=0
+for arg in "$@"; do
+  case "$arg" in
+    --criterion) criterion=1 ;;
+    *) [[ "$parent_set" -eq 1 ]] && { echo "Unexpected argument: $arg"; exit 1; }; parent="$arg"; parent_set=1 ;;
+  esac
+done
+case "$lang" in c) template="c-cmake";; cpp|c++) template="cpp-cmake";; *) echo "Unknown language: $lang"; exit 1;; esac
+script_path="$(readlink -f "${BASH_SOURCE[0]}")"
+script_dir="$(dirname "$script_path")"
+src="$script_dir/$template"; dst="$parent/$name"
+[[ ! -d "$src" ]] && { echo "Template directory not found: $src"; exit 1; }
+[[ -e "$dst" ]] && { echo "Destination already exists: $dst"; exit 1; }
+mkdir -p "$parent"; cp -a "$src" "$dst"
+if [[ "$criterion" -eq 1 ]]; then build_tests_default="ON"; else build_tests_default="OFF"; rm -rf "$dst/tests"; fi
+while IFS= read -r -d '' file; do
+ sed -i -e "s/@PROJECT_NAME@/$name/g" -e "s/@BUILD_TESTS_DEFAULT@/$build_tests_default/g" "$file"
+done < <(find "$dst" -type f -print0)
+cd "$dst"; git init >/dev/null
+echo "Created: $dst"

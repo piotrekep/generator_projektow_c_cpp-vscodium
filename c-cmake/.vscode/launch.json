@@ -1,0 +1,7 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {"name":"CodeLLDB: Debug","type":"lldb","request":"launch","program":"${workspaceFolder}/build/debug/@PROJECT_NAME@","cwd":"${workspaceFolder}","args":[],"preLaunchTask":"CMake: Build Debug"},
+    {"name":"CodeLLDB: Profile build","type":"lldb","request":"launch","program":"${workspaceFolder}/build/profile/@PROJECT_NAME@","cwd":"${workspaceFolder}","args":[],"preLaunchTask":"CMake: Build Profile"}
+  ]
+}

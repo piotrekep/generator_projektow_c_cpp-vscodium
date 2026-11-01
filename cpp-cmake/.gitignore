@@ -1,0 +1,7 @@
+build/
+.cache/
+compile_commands.json
+perf.data
+callgrind.out*
+cachegrind.out*
+heaptrack*.gz

@@ -1,0 +1,7 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": false,
+  "clangd.arguments": ["--background-index","--clang-tidy","--completion-style=detailed","--compile-commands-dir=build/debug","--header-insertion=iwyu"],
+  "editor.parameterHints.enabled": true,
+  "editor.suggestOnTriggerCharacters": true
+}
